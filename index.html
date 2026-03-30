@@ -232,14 +232,26 @@
 
         // --- 2. CORE LOGIC ---
 
-        // 파일 업로드 통합 함수
-        async function uploadFile(file) {
-            if (!file) return null;
-            const fileName = `${Date.now()}_${file.name}`;
-            const { data, error } = await supabaseClient.storage.from(BUCKET_NAME).upload(fileName, file);
-            if (error) throw error;
-            return supabaseClient.storage.from(BUCKET_NAME).getPublicUrl(fileName).data.publicUrl;
-        }
+      // 파일 업로드 통합 함수 (한글 이름 오류 방지 버전)
+async function uploadFile(file) {
+    if (!file) return null;
+    
+    // 파일 확장자만 추출 (예: .jpg, .png)
+    const fileExt = file.name.split('.').pop();
+    // 파일 이름을 '시간_랜덤숫자.확장자' 형태로 변경 (한글 제거)
+    const fileName = `${Date.now()}_${Math.floor(Math.random() * 1000)}.${fileExt}`;
+    
+    const { data, error } = await supabaseClient.storage
+        .from(BUCKET_NAME)
+        .upload(fileName, file);
+        
+    if (error) {
+        console.error("Storage 업로드 에러:", error);
+        throw error;
+    }
+    
+    return supabaseClient.storage.from(BUCKET_NAME).getPublicUrl(fileName).data.publicUrl;
+}
 
         // 데이터 동기화
         async function refreshData() {
