@@ -58,15 +58,19 @@
         <main class="max-w-5xl mx-auto px-4 py-8">
             <div id="user-info-bar" class="mb-6 flex items-center justify-between bg-blue-50 px-6 py-3 rounded-2xl border border-blue-100 text-blue-800">
                 <span class="text-sm font-bold"><i class="fas fa-user-circle mr-2"></i><span id="display-user-dept"></span></span>
-                <span class="text-xs font-medium">데이터 동기화 완료</span>
+                <span class="text-xs font-medium">기간별 예약 모드 가동 중</span>
             </div>
             
-            <section id="view-catalog" class="block"><div id="item-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"></div></section>
+            <section id="view-catalog" class="block">
+                <div class="mb-6 p-4 bg-white rounded-2xl border flex items-center justify-between">
+                    <div class="text-sm font-bold text-gray-600">조회 날짜 기준 재고:</div>
+                    <input type="date" id="catalog-view-date" class="border rounded-lg p-2 text-sm font-bold outline-none focus:ring-2 focus:ring-blue-400" onchange="renderItems()">
+                </div>
+                <div id="item-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+            </section>
             
             <section id="view-return" class="hidden">
-                <div class="mb-8">
-                    <h2 class="text-2xl font-bold text-gray-800">우리 부서 대여 현황</h2>
-                </div>
+                <div class="mb-8"><h2 class="text-2xl font-bold text-gray-800">우리 부서 대여 현황</h2></div>
                 <div id="return-list" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
             </section>
             
@@ -82,7 +86,7 @@
                                 <tr>
                                     <th class="px-6 py-4">비품 정보</th>
                                     <th class="px-6 py-4">부서/담당자</th>
-                                    <th class="px-6 py-4">반납예정일</th>
+                                    <th class="px-6 py-4">사용 기간</th>
                                     <th class="px-6 py-4">상태</th>
                                     <th class="px-6 py-4">작업</th>
                                 </tr>
@@ -103,28 +107,36 @@
         <div class="bg-white rounded-3xl w-full max-w-md p-6 shadow-2xl relative max-h-[90vh] overflow-y-auto">
             <button onclick="closeModal('rental-modal')" class="absolute top-4 right-4 text-gray-400"><i class="fas fa-times text-xl"></i></button>
             <h3 class="text-xl font-bold mb-4" id="modal-title">비품 대여 신청</h3>
-            <img id="modal-display-img" class="display-img-full mb-4 border shadow-sm">
+            <img id="modal-display-img" class="display-img-full mb-4 border">
             <form id="rental-form" class="space-y-4">
                 <input type="hidden" id="form-item-id">
-                <input type="text" id="form-dept-readonly" class="w-full p-3 bg-gray-50 border rounded-xl font-bold" readonly>
                 <div class="grid grid-cols-2 gap-2">
                     <input type="text" id="form-user" placeholder="성함" class="w-full p-3 border rounded-xl" required>
-                    <input type="tel" id="form-phone" placeholder="000-0000-0000" class="w-full p-3 border rounded-xl" required>
+                    <input type="tel" id="form-phone" placeholder="010-0000-0000" class="w-full p-3 border rounded-xl" required>
                 </div>
+
+                <div class="p-4 bg-gray-50 rounded-2xl border border-dashed">
+                    <label class="block text-xs font-bold text-gray-500 mb-2 uppercase">사용 기간 설정</label>
+                    <div class="flex flex-col space-y-2">
+                        <div class="flex items-center space-x-2">
+                            <span class="text-xs text-gray-400 w-12">시작</span>
+                            <input type="date" id="form-start-date" class="flex-1 p-2 border rounded-lg text-sm" onchange="updateDynamicStock()" required>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <span class="text-xs text-gray-400 w-12">종료</span>
+                            <input type="date" id="form-return-date" class="flex-1 p-2 border rounded-lg text-sm" onchange="updateDynamicStock()" required>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="bg-blue-50 p-4 rounded-2xl border border-blue-100">
                     <div class="flex justify-between mb-2">
                         <label class="text-sm font-bold">대여 수량</label>
-                        <span id="form-available-info" class="text-xs text-blue-600 font-bold"></span>
+                        <span id="form-available-info" class="text-xs text-blue-600 font-bold">날짜를 선택하세요</span>
                     </div>
                     <input type="number" id="form-quantity" min="1" value="1" class="w-full p-3 border rounded-xl font-bold" required>
                 </div>
-                <div class="p-4 bg-gray-50 rounded-2xl border border-dashed text-center">
-                    <label class="block text-xs font-bold text-gray-500 mb-2">반납 예정 일시</label>
-                    <div class="flex space-x-2">
-                        <input type="date" id="form-return-date" class="flex-1 p-2 border rounded-lg text-sm" required>
-                        <select id="form-return-hour" class="flex-1 p-2 border rounded-lg text-sm" required></select>
-                    </div>
-                </div>
+
                 <div>
                     <label class="block text-sm font-semibold mb-1">상태 사진 업로드 <span class="text-red-500">*</span></label>
                     <input type="file" id="form-rental-photo" accept="image/*" class="w-full text-xs" onchange="previewFile(this, 'rental-img-preview')" required>
@@ -139,34 +151,16 @@
         <div class="bg-white rounded-3xl w-full max-w-md p-6 shadow-2xl relative">
             <button onclick="closeModal('return-modal')" class="absolute top-4 right-4 text-gray-400"><i class="fas fa-times text-xl"></i></button>
             <h3 class="text-xl font-bold mb-1">반납 신청</h3>
-            <p class="text-xs text-blue-600 font-bold mb-4">오늘 날짜: <span id="return-today-label"></span></p>
+            <p class="text-xs text-blue-600 font-bold mb-4">반납 예정일 기준: <span id="return-today-label"></span></p>
             <form id="return-form" class="space-y-4">
                 <input type="hidden" id="return-rental-id">
                 <div class="flex space-x-2">
-                    <label class="flex-1 border p-4 rounded-xl text-center cursor-pointer has-[:checked]:bg-blue-50 has-[:checked]:border-blue-500"><input type="radio" name="return-condition" value="Good" checked class="hidden">정상</label>
-                    <label class="flex-1 border p-4 rounded-xl text-center cursor-pointer has-[:checked]:bg-red-50 has-[:checked]:border-red-500"><input type="radio" name="return-condition" value="Damaged" class="hidden">파손/분실</label>
+                    <label class="flex-1 border p-4 rounded-xl text-center cursor-pointer has-[:checked]:bg-blue-50"><input type="radio" name="return-condition" value="Good" checked class="hidden">정상</label>
+                    <label class="flex-1 border p-4 rounded-xl text-center cursor-pointer has-[:checked]:bg-red-50"><input type="radio" name="return-condition" value="Damaged" class="hidden">파손/분실</label>
                 </div>
-                <div>
-                    <label class="block text-sm font-semibold mb-1">반납 사진 업로드 <span class="text-red-500">*</span></label>
-                    <input type="file" id="return-img-file" accept="image/*" class="w-full text-xs" onchange="previewFile(this, 'return-img-preview')" required>
-                    <img id="return-img-preview" class="preview-box hidden">
-                </div>
+                <input type="file" id="return-img-file" accept="image/*" class="w-full text-xs" onchange="previewFile(this, 'return-img-preview')" required>
+                <img id="return-img-preview" class="preview-box hidden">
                 <button type="submit" class="w-full py-4 bg-gray-800 text-white rounded-xl font-bold">반납 신청 제출</button>
-            </form>
-        </div>
-    </div>
-
-    <div id="admin-master-modal" class="fixed inset-0 bg-black/50 hidden z-50 flex items-center justify-center p-4">
-        <div class="bg-white rounded-3xl w-full max-w-md p-6 shadow-2xl relative">
-            <button onclick="closeModal('admin-master-modal')" class="absolute top-4 right-4 text-gray-400"><i class="fas fa-times text-xl"></i></button>
-            <h3 class="text-xl font-bold mb-6" id="master-modal-title">비품 정보 관리</h3>
-            <form id="master-edit-form" class="space-y-4">
-                <input type="hidden" id="edit-item-id">
-                <input type="text" id="edit-name" class="w-full p-3 border rounded-xl" placeholder="비품 명칭" required>
-                <input type="number" id="edit-total" class="w-full p-3 border rounded-xl" placeholder="총 보유 수량" required>
-                <input type="text" id="edit-location" class="w-full p-3 border rounded-xl" placeholder="보관 위치" required>
-                <input type="file" id="edit-img-file" accept="image/*" class="w-full text-xs">
-                <button type="submit" class="w-full bg-gray-800 text-white font-bold py-4 rounded-xl">저장하기</button>
             </form>
         </div>
     </div>
@@ -176,14 +170,14 @@
             <button onclick="closeModal('admin-inspect-modal')" class="absolute top-4 right-6 text-2xl">×</button>
             <h3 class="text-2xl font-bold mb-6">검수 및 승인</h3>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8 text-center">
-                <div><p class="text-xs font-bold text-gray-400 mb-2 uppercase">대여 시 사진</p><img id="inspect-rental-img" class="img-compare border"></div>
-                <div><p class="text-xs font-bold text-blue-600 mb-2 uppercase">반납 시 사진</p><img id="inspect-return-img" class="img-compare border"></div>
+                <div><p class="text-xs font-bold text-gray-400 mb-2">대여 시 사진</p><img id="inspect-rental-img" class="img-compare border"></div>
+                <div><p class="text-xs font-bold text-blue-600 mb-2">반납 시 사진</p><img id="inspect-return-img" class="img-compare border"></div>
             </div>
-            <button id="btn-final-approve" class="w-full py-4 bg-blue-600 text-white font-bold rounded-2xl shadow-lg">최종 승인</button>
+            <button id="btn-final-approve" class="w-full py-4 bg-blue-600 text-white font-bold rounded-2xl">최종 승인</button>
         </div>
     </div>
 
-    <div id="toast" class="fixed bottom-8 left-1/2 -translate-x-1/2 bg-gray-800 text-white px-8 py-4 rounded-full shadow-2xl hidden z-[110] transition-all flex items-center space-x-2">
+    <div id="toast" class="fixed bottom-8 left-1/2 -translate-x-1/2 bg-gray-800 text-white px-8 py-4 rounded-full shadow-2xl hidden z-[110] flex items-center space-x-2">
         <span id="toast-msg"></span>
     </div>
 
@@ -202,31 +196,85 @@
         let items = [];
         let rentals = [];
 
-        // 파일 미리보기 함수
-        function previewFile(input, previewId) {
-            const preview = document.getElementById(previewId);
-            const file = input.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    preview.src = e.target.result;
-                    preview.classList.remove('hidden');
+        // 초기 날짜 세팅 (오늘)
+        document.getElementById('catalog-view-date').value = new Date().toISOString().split('T')[0];
+
+        // [중요 로직] 특정 기간 중 가능한 "최소" 재고 계산
+        function getAvailableStockForPeriod(itemId, startStr, endStr) {
+            const item = items.find(i => i.id === itemId);
+            if (!item) return 0;
+            if (!startStr || !endStr) return item.total;
+
+            const S = new Date(startStr);
+            const E = new Date(endStr);
+            
+            // 대여 시작일부터 종료일까지 매일매일의 재고를 체크하여 그중 가장 적은 값을 반환
+            let minAvailable = item.total;
+            
+            for (let d = new Date(S); d <= E; d.setDate(d.getDate() + 1)) {
+                const checkDate = new Date(d);
+                let rentedQtyOnThisDay = 0;
+
+                rentals.forEach(r => {
+                    if (r.item_id === itemId && r.status !== '반납완료') {
+                        const rS = new Date(r.start_date || r.created_at);
+                        const rE = new Date(r.deadline);
+                        
+                        // 체크하는 날짜가 예약 기간에 포함되는지 확인
+                        if (checkDate >= rS && checkDate <= rE) {
+                            rentedQtyOnThisDay += r.qty;
+                        }
+                    }
+                });
+                minAvailable = Math.min(minAvailable, item.total - rentedQtyOnThisDay);
+            }
+            return Math.max(0, minAvailable);
+        }
+
+        // 카탈로그 렌더링
+        function renderItems() {
+            const viewDate = document.getElementById('catalog-view-date').value;
+            const grid = document.getElementById('item-grid');
+            
+            grid.innerHTML = items.map(item => {
+                const available = getAvailableStockForPeriod(item.id, viewDate, viewDate);
+                return `
+                    <div class="item-card bg-white rounded-3xl border shadow-sm overflow-hidden flex flex-col">
+                        <img src="${item.img_url || 'https://via.placeholder.com/400x300?text=No+Image'}" class="w-full h-44 object-contain bg-gray-50 border-b">
+                        <div class="p-5 flex flex-col flex-1">
+                            <h3 class="text-lg font-bold text-gray-800 mb-1">${item.name}</h3>
+                            <p class="text-xs text-gray-500 mb-4"><i class="fas fa-map-marker-alt mr-1 text-red-400"></i> ${item.location}</p>
+                            <div class="mt-auto">
+                                <p class="text-sm font-bold ${available > 0 ? 'text-blue-600' : 'text-red-500'} mb-4">${viewDate} 기준 재고: ${available} / ${item.total}</p>
+                                <button onclick="openRentalModal(${item.id})" class="w-full py-3 rounded-xl font-bold bg-blue-600 text-white">대여 신청</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // 대여 모달 날짜 변경 시 재고 실시간 업데이트
+        function updateDynamicStock() {
+            const itemId = parseInt(document.getElementById('form-item-id').value);
+            const start = document.getElementById('form-start-date').value;
+            const end = document.getElementById('form-return-date').value;
+            const info = document.getElementById('form-available-info');
+
+            if (start && end) {
+                if (new Date(start) > new Date(end)) {
+                    info.innerText = "날짜 오류";
+                    info.className = "text-xs text-red-500 font-bold";
+                    return;
                 }
-                reader.readAsDataURL(file);
-            } else {
-                preview.src = '';
-                preview.classList.add('hidden');
+                const avail = getAvailableStockForPeriod(itemId, start, end);
+                info.innerText = `해당 기간 가능 수량: ${avail}개`;
+                info.className = "text-xs text-blue-600 font-bold";
+                document.getElementById('form-quantity').max = avail;
             }
         }
 
-        async function uploadFile(file) {
-            if (!file) return null;
-            const fileExt = file.name.split('.').pop();
-            const fileName = `${Date.now()}_${Math.floor(Math.random() * 1000)}.${fileExt}`;
-            const { error } = await supabaseClient.storage.from(BUCKET_NAME).upload(fileName, file);
-            if (error) throw error;
-            return supabaseClient.storage.from(BUCKET_NAME).getPublicUrl(fileName).data.publicUrl;
-        }
+        // --- 기존 이벤트 로직 수정 및 유지 ---
 
         async function refreshData() {
             const { data: iData } = await supabaseClient.from('items').select('*').order('id');
@@ -235,63 +283,46 @@
             renderAll();
         }
 
-        // 렌더링 시 날짜 형식 정리 (시간 제거)
         function renderAll() {
-            const grid = document.getElementById('item-grid');
-            grid.innerHTML = items.map(item => `
-                <div class="item-card bg-white rounded-3xl border shadow-sm overflow-hidden flex flex-col">
-                    <img src="${item.img_url || 'https://via.placeholder.com/400x300?text=No+Image'}" class="w-full h-44 object-contain bg-gray-50 border-b">
-                    <div class="p-5 flex flex-col flex-1">
-                        <h3 class="text-lg font-bold text-gray-800 mb-1">${item.name}</h3>
-                        <p class="text-xs text-gray-500 mb-4"><i class="fas fa-map-marker-alt mr-1 text-red-400"></i> ${item.location}</p>
-                        <div class="mt-auto">
-                            <p class="text-sm font-bold ${item.available > 0 ? 'text-blue-600' : 'text-red-500'} mb-4">재고: ${item.available} / ${item.total}</p>
-                            <button onclick="openRentalModal(${item.id})" ${item.available === 0 ? 'disabled' : ''} class="w-full py-3 rounded-xl font-bold transition ${item.available > 0 ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-400'}">대여 신청</button>
-                        </div>
-                    </div>
-                </div>
-            `).join('');
-
+            renderItems(); // 카탈로그
+            
+            // 우리 부서 현황
             const returnList = document.getElementById('return-list');
-            const myDeptRentals = rentals.filter(r => r.dept === currentUser.dept);
-            returnList.innerHTML = myDeptRentals.length ? myDeptRentals.map(r => `
+            const myR = rentals.filter(r => r.dept === currentUser.dept);
+            returnList.innerHTML = myR.length ? myR.map(r => `
                 <div class="bg-white p-5 rounded-2xl border shadow-sm flex items-center justify-between">
                     <div>
                         <p class="text-[10px] font-bold text-blue-600 mb-1">${r.status}</p>
                         <p class="font-bold text-lg text-gray-800">${r.item_name} (${r.qty}개)</p>
-                        <p class="text-[10px] text-gray-400">예정일: ${r.deadline.split('T')[0]}</p>
+                        <p class="text-[10px] text-gray-400">기간: ${r.start_date} ~ ${r.deadline.split('T')[0]}</p>
                     </div>
                     ${r.status === '대여중' ? `<button onclick="openReturnModal(${r.id})" class="px-5 py-2 bg-gray-800 text-white text-sm font-bold rounded-xl">반납하기</button>` : `<span class="text-xs text-gray-400 font-bold">처리완료</span>`}
                 </div>
-            `).join('') : '<div class="col-span-full py-16 text-center text-gray-400 border-2 border-dashed rounded-3xl">내역이 없습니다.</div>';
+            `).join('') : '<p class="col-span-full text-center py-10 text-gray-400 border-2 border-dashed rounded-3xl">내역 없음</p>';
 
+            // 관리자 로그
             if (currentUser?.isAdmin) {
-                const now = new Date();
-                document.getElementById('rental-log-body').innerHTML = rentals.map(log => {
-                    const cleanDeadline = log.deadline.split('T')[0]; // 날짜만 추출
-                    const isOverdue = (log.status === '대여중' || log.status === '반납대기') && new Date(log.deadline) < now;
-                    return `
-                        <tr class="${isOverdue ? 'overdue-row' : ''}">
-                            <td class="px-6 py-4 font-bold">${log.item_name} (${log.qty})</td>
-                            <td class="px-6 py-4 text-xs font-medium">${log.dept} / ${log.user_name}</td>
-                            <td class="px-6 py-4 text-xs ${isOverdue ? 'overdue-text' : ''} font-bold">${cleanDeadline}</td>
-                            <td class="px-6 py-4 text-[10px] font-bold uppercase"><span class="${log.status === '대여중' ? 'text-orange-500' : 'text-blue-500'}">${log.status}</span></td>
-                            <td class="px-6 py-4">${log.status === '반납대기' ? `<button onclick="adminInspectReturn(${log.id})" class="text-blue-600 font-bold underline">검수</button>` : '-'}</td>
-                        </tr>
-                    `;
-                }).join('');
+                document.getElementById('rental-log-body').innerHTML = rentals.map(log => `
+                    <tr>
+                        <td class="px-6 py-4 font-bold">${log.item_name} (${log.qty})</td>
+                        <td class="px-6 py-4 text-xs">${log.dept} / ${log.user_name}</td>
+                        <td class="px-6 py-4 text-[11px] font-bold">${log.start_date} ~ ${log.deadline.split('T')[0]}</td>
+                        <td class="px-6 py-4 text-[10px] font-bold uppercase"><span class="${log.status === '대여중' ? 'text-orange-500' : 'text-blue-500'}">${log.status}</span></td>
+                        <td class="px-6 py-4">${log.status === '반납대기' ? `<button onclick="adminInspectReturn(${log.id})" class="text-blue-600 font-bold underline">검수</button>` : '-'}</td>
+                    </tr>
+                `).join('');
 
                 document.getElementById('admin-master-grid').innerHTML = items.map(i => `
                     <div class="bg-white p-4 rounded-2xl border flex items-center space-x-4">
                         <img src="${i.img_url}" class="w-12 h-12 rounded-lg object-contain bg-gray-50 border">
-                        <div class="flex-1"><p class="font-bold text-sm text-gray-800">${i.name} (${i.total}개)</p><p class="text-[10px] text-gray-400">${i.location}</p></div>
+                        <div class="flex-1"><p class="font-bold text-sm text-gray-800">${i.name} (${i.total}개)</p></div>
                         <button onclick="openItemModal('edit', ${i.id})" class="text-xs text-blue-500 font-bold">수정</button>
                     </div>
                 `).join('');
             }
         }
 
-        // 이벤트 및 신청 성공 후 폼 초기화 (reset)
+        // 로그인
         document.getElementById('login-form').onsubmit = async function(e) {
             e.preventDefault();
             const id = document.getElementById('login-id').value;
@@ -303,78 +334,92 @@
                 document.getElementById('display-user-dept').innerText = currentUser.dept;
                 document.getElementById('nav-admin').classList.toggle('hidden', !currentUser.isAdmin);
                 await refreshData();
-                showToast(`${currentUser.dept}님 로그인 성공`);
+                showToast("로그인 성공");
             } else alert("로그인 정보를 확인하세요.");
         };
 
+        // 대여 신청 (기간 기반)
         document.getElementById('rental-form').onsubmit = async function(e) {
             e.preventDefault();
             const itemId = parseInt(document.getElementById('form-item-id').value);
-            const item = items.find(i => i.id === itemId);
             const qty = parseInt(document.getElementById('form-quantity').value);
-            if (qty > item.available) return alert("재고가 부족합니다.");
+            const start = document.getElementById('form-start-date').value;
+            const end = document.getElementById('form-return-date').value;
+            const file = document.getElementById('form-rental-photo').files[0];
+
+            // 서버 전송 전 최종 재고 체크
+            const available = getAvailableStockForPeriod(itemId, start, end);
+            if (qty > available) return alert("해당 기간에 재고가 부족합니다!");
 
             try {
                 showToast("업로드 중...");
-                const url = await uploadFile(document.getElementById('form-rental-photo').files[0]);
-                await supabaseClient.from('rentals').insert([{
-                    item_id: itemId, item_name: item.name, dept: currentUser.dept,
-                    user_name: document.getElementById('form-user').value, phone: document.getElementById('form-phone').value,
-                    qty, deadline: document.getElementById('form-return-date').value + 'T00:00:00',
+                const url = await uploadFile(file);
+                const { error } = await supabaseClient.from('rentals').insert([{
+                    item_id: itemId, item_name: items.find(i=>i.id===itemId).name,
+                    dept: currentUser.dept, user_name: document.getElementById('form-user').value,
+                    phone: document.getElementById('form-phone').value,
+                    qty, start_date: start, deadline: end + 'T23:59:59',
                     rental_photo_url: url, status: '대여중'
                 }]);
-                await supabaseClient.from('items').update({ available: item.available - qty }).eq('id', itemId);
-                
-                // 성공 후 초기화
+                if (error) throw error;
                 e.target.reset();
                 document.getElementById('rental-img-preview').classList.add('hidden');
                 closeModal('rental-modal');
                 await refreshData();
-                showToast("대여 성공!");
-            } catch (err) { alert("오류 발생"); }
+                showToast("예약 완료!");
+            } catch (err) { alert("처리 오류"); }
         };
 
-        document.getElementById('return-form').onsubmit = async function(e) {
-            e.preventDefault();
-            const rId = parseInt(document.getElementById('return-rental-id').value);
-            try {
-                showToast("사진 전송 중...");
-                const url = await uploadFile(document.getElementById('return-img-file').files[0]);
-                await supabaseClient.from('rentals').update({
-                    status: '반납대기', return_photo_url: url,
-                    return_condition: document.querySelector('input[name="return-condition"]:checked').value + ` (반납일: ${new Date().toLocaleDateString()})`
-                }).eq('id', rId);
-                
-                // 성공 후 초기화
-                e.target.reset();
-                document.getElementById('return-img-preview').classList.add('hidden');
-                closeModal('return-modal');
-                await refreshData();
-                showToast("반납 접수 완료!");
-            } catch (err) { alert("반납 오류"); }
-        };
-
+        // 나머지 공통 유틸리티 함수
         function openRentalModal(id) {
             const item = items.find(i => i.id === id);
             document.getElementById('form-item-id').value = id;
             document.getElementById('modal-title').innerText = item.name;
             document.getElementById('modal-display-img').src = item.img_url;
             document.getElementById('form-dept-readonly').value = currentUser.dept;
-            document.getElementById('form-available-info').innerText = item.available;
-            const sel = document.getElementById('form-return-hour');
-            sel.innerHTML = '';
-            for(let i=0; i<24; i++) sel.add(new Option(i<10?`0${i}:00`:`${i}:00`, i));
+            
+            // 날짜 기본값 (오늘 ~ 내일)
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('form-start-date').value = today;
+            document.getElementById('form-return-date').value = today;
+            
+            updateDynamicStock();
             document.getElementById('rental-modal').classList.remove('hidden');
         }
 
-        function openReturnModal(id) { 
-            const today = new Date().toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' });
-            document.getElementById('return-today-label').innerText = today; // 오늘 날짜 표시
-            document.getElementById('return-rental-id').value = id; 
-            document.getElementById('return-modal').classList.remove('hidden'); 
+        async function uploadFile(file) {
+            if (!file) return null;
+            const fileName = `${Date.now()}_${Math.floor(Math.random()*1000)}.${file.name.split('.').pop()}`;
+            const { error } = await supabaseClient.storage.from(BUCKET_NAME).upload(fileName, file);
+            if (error) throw error;
+            return supabaseClient.storage.from(BUCKET_NAME).getPublicUrl(fileName).data.publicUrl;
         }
 
-        // --- 기타 유틸리티 함수들 ---
+        function previewFile(input, previewId) {
+            const preview = document.getElementById(previewId);
+            const file = input.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (e) => { preview.src = e.target.result; preview.classList.remove('hidden'); }
+                reader.readAsDataURL(file);
+            }
+        }
+
+        document.getElementById('return-form').onsubmit = async function(e) {
+            e.preventDefault();
+            const rId = parseInt(document.getElementById('return-rental-id').value);
+            try {
+                showToast("전송 중...");
+                const url = await uploadFile(document.getElementById('return-img-file').files[0]);
+                await supabaseClient.from('rentals').update({
+                    status: '반납대기', return_photo_url: url,
+                    return_condition: document.querySelector('input[name="return-condition"]:checked').value + ` (${new Date().toLocaleDateString()})`
+                }).eq('id', rId);
+                closeModal('return-modal');
+                await refreshData();
+            } catch (err) { alert("반납 오류"); }
+        };
+
         function switchView(view) {
             ['catalog', 'return', 'admin'].forEach(v => {
                 document.getElementById(`view-${v}`).classList.toggle('hidden', v !== view);
@@ -391,9 +436,7 @@
             document.getElementById('inspect-rental-img').src = r.rental_photo_url;
             document.getElementById('inspect-return-img').src = r.return_photo_url;
             document.getElementById('btn-final-approve').onclick = async () => {
-                const item = items.find(i => i.id === r.item_id);
                 await supabaseClient.from('rentals').update({ status: '반납완료' }).eq('id', rId);
-                await supabaseClient.from('items').update({ available: item.available + r.qty }).eq('id', r.item_id);
                 closeModal('admin-inspect-modal');
                 await refreshData();
             };
@@ -407,7 +450,7 @@
                 document.getElementById('edit-name').value = item.name;
                 document.getElementById('edit-total').value = item.total;
                 document.getElementById('edit-location').value = item.location;
-            } else document.getElementById('edit-item-id').value = '';
+            }
             document.getElementById('admin-master-modal').classList.remove('hidden');
         }
         document.getElementById('master-edit-form').onsubmit = async function(e) {
@@ -426,8 +469,9 @@
                 else await supabaseClient.from('items').insert([data]);
                 closeModal('admin-master-modal');
                 await refreshData();
-            } catch (err) { alert("저장 실패"); }
+            } catch (err) { alert("실패"); }
         };
+        function openReturnModal(id) { document.getElementById('return-rental-id').value = id; document.getElementById('return-modal').classList.remove('hidden'); }
         function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
         function showToast(m) { const t = document.getElementById('toast'); document.getElementById('toast-msg').innerText = m; t.classList.remove('hidden'); setTimeout(() => t.classList.add('hidden'), 3000); }
         function handleLogout() { location.reload(); }
